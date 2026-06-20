@@ -24,6 +24,25 @@ st.markdown("""
         background-color: #0d1117;
         color: #f3f4f6;
     }
+    /* Style Streamlit Download Button */
+    div.stDownloadButton > button {
+        color: #000000 !important;
+        background-color: #10b981 !important;
+        border: 1px solid #10b981 !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    div.stDownloadButton > button:hover {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+        color: #000000 !important;
+        transform: translateY(-1px) !important;
+    }
+    div.stDownloadButton > button:active {
+        background-color: #047857 !important;
+        border-color: #047857 !important;
+        color: #000000 !important;
+    }
     .main-title {
         font-size: 2.5rem !important;
         font-weight: 800 !important;
