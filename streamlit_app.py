@@ -108,6 +108,16 @@ if file_cdf is not None and file_pdf is not None:
     try:
         # Preprocess Data
         df_cdf = pd.read_csv(file_cdf)
+        
+        # Auto-convert column names like '201801' to '2018-01'
+        rename_dict = {}
+        for col in df_cdf.columns:
+            col_str = str(col).strip()
+            if len(col_str) == 6 and col_str.isdigit():
+                rename_dict[col] = f"{col_str[:4]}-{col_str[4:]}"
+        if rename_dict:
+            df_cdf.rename(columns=rename_dict, inplace=True)
+
         df_pdf = pd.read_csv(file_pdf)
         
         # 1. Parse CDF Field Data
