@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Failure Rate Prediction & Reliability Analysis</title>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 100%);
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+            --accent-purple: #a855f7;
+            --accent-purple-glow: rgba(168, 85, 247, 0.4);
+            --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.4);
+            --terminal-bg: #030712;
+            --terminal-border: rgba(255, 255, 255, 0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2.5rem 1.5rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            filter: drop-shadow(0 2px 8px rgba(96, 165, 250, 0.2));
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: var(--transition);
+        }
+
+        /* Upload Section */
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+        }
+
+        .upload-box:hover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .upload-box.has-file {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.03);
+        }
+
+        .upload-box.has-file:hover {
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .upload-box input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+        }
+
+        .upload-box:hover .upload-icon {
+            transform: translateY(-5px);
+        }
+
+        .upload-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Action Buttons */
+        .action-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 0.85rem 2.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 var(--primary-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-primary:disabled {
+            background: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Popup / Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            color: var(--text-main);
+        }
+
+        .method-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .method-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .method-card:hover {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
+        }
+
+        .method-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .method-card p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 15, 30, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 1001;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            filter: drop-shadow(0 0 10px var(--primary-glow));
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Results Area */
+        .results-area {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Plots Box */
+        .plots-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--card-border);
+            padding: 1rem;
+        }
+
+        .plots-image {
+            width: 100%;
+            height: auto;
+            max-height: 550px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        /* Terminal Output Panel */
+        .terminal-panel {
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #eab308; }
+        .dot-green { background: #22c55e; }
+
+        .terminal-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .terminal-body {
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .terminal-pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #38bdf8; /* Terminal style color */
+            white-space: pre-wrap;
+        }
+
+        .success-checkmark {
+            color: var(--accent-green);
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+
+        /* Save CSV Panel Styling */
+        .save-panel {
+            padding: 1.5rem;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .save-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .save-controls {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex-grow: 1;
+            min-width: 250px;
+        }
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .input-group input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: black;
+            box-shadow: 0 4px 14px 0 var(--accent-green-glow);
+            padding: 0.75rem 2rem;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 var(--accent-green-glow);
+            filter: brightness(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Failure Rate Prediction System</h1>
+            <p>Weibull, Log-Normal, Exponential, Kaplan-Meier Reliability Analysis</p>
+        </header>
+
+        <!-- Main Glassmorphism Card for Uploads -->
+        <div class="glass-card">
+            <div class="upload-section">
+                <!-- CDF File Upload -->
+                <div class="upload-box" id="box-cdf">
+                    <span class="upload-icon" id="icon-cdf">📊</span>
+                    <div class="upload-title" id="title-cdf">누적고장률 데이터 선택</div>
+                    <div class="upload-desc" id="desc-cdf">01_Eva_Leak_CDF_Rate.csv 파일을 선택하세요.</div>
+                    <input type="file" id="file-cdf" accept=".csv">
+                </div>
+
+                <!-- PDF File Upload -->
+                <div class="upload-box" id="box-pdf">
+                    <span class="upload-icon" id="icon-pdf">📈</span>
+                    <div class="upload-title" id="title-pdf">사용개월별 고장/생존수량 선택</div>
+                    <div class="upload-desc" id="desc-pdf">02_Eva_Leak_PDF_Predict_Data.csv 파일을 선택하세요.</div>
+                    <input type="file" id="file-pdf" accept=".csv">
+                </div>
+            </div>
+
+            <div class="action-container">
+                <button class="btn btn-primary" id="analyze-btn" disabled>분석 실행</button>
+            </div>
+        </div>
+
+        <!-- Popup Modal for Method Selection -->
+        <div class="modal-overlay" id="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <div class="modal-title">10년 누적고장률 분석 방법 선택</div>
+                    <button class="close-btn" id="close-modal">&times;</button>
+                </div>
+                <div class="method-grid">
+                    <div class="method-card" data-method="Weibull">
+                        <h3>Weibull Analysis</h3>
+                        <p>형상모수 및 척도모수 예측 적합</p>
+                    </div>
+                    <div class="method-card" data-method="Log-Normal">
+                        <h3>Log-Normal Analysis</h3>
+                        <p>대수 정규분포 모수(Mu, Sigma) 분석</p>
+                    </div>
+                    <div class="method-card" data-method="Exponential">
+                        <h3>Exponential Analysis</h3>
+                        <p>고장률(Lambda) 및 MTTF 수명 분석</p>
+                    </div>
+                    <div class="method-card" data-method="Kaplan-Meier">
+                        <h3>Kaplan-Meier Estimate</h3>
+                        <p>비모수 생존 수량 추정 (lifelines)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <p style="color: var(--text-main); font-weight: 600;">데이터 분석 및 신뢰성 적합 분석 수행 중...</p>
+        </div>
+
+        <!-- Results Area -->
+        <div class="results-area" id="results-area">
+            <!-- Plots rendering side-by-side -->
+            <div class="plots-container">
+                <img id="plots-img" class="plots-image" src="" alt="Reliability Cumulative Failure Rate Graphs">
+            </div>
+
+            <!-- Save CSV Panel -->
+            <div class="glass-card save-panel">
+                <div class="save-title">💾 분석 결과 데이터 저장</div>
+                <div class="save-controls">
+                    <div class="input-group">
+                        <label for="save-filename">저장할 파일명 입력 (.csv)</label>
+                        <input type="text" id="save-filename" value="Weibull_Predict_Results.csv" placeholder="예: Weibull_Predict_Results.csv">
+                    </div>
+                    <button class="btn btn-save" id="save-csv-btn">
+                        <span>CSV 파일로 저장</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Terminal-like formatted text output -->
+            <div class="terminal-panel">
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="terminal-title">reliability_analysis_console.log</div>
+                    <div></div>
+                </div>
+                <div class="terminal-body">
+                    <pre id="console-output" class="terminal-pre"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileCdfInput = document.getElementById('file-cdf');
+        const filePdfInput = document.getElementById('file-pdf');
+        
+        const boxCdf = document.getElementById('box-cdf');
+        const boxPdf = document.getElementById('box-pdf');
+        
+        const titleCdf = document.getElementById('title-cdf');
+        const titlePdf = document.getElementById('title-pdf');
+        
+        const descCdf = document.getElementById('desc-cdf');
+        const descPdf = document.getElementById('desc-pdf');
+        
+        const iconCdf = document.getElementById('icon-cdf');
+        const iconPdf = document.getElementById('icon-pdf');
+
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const closeModal = document.getElementById('close-modal');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        const resultsArea = document.getElementById('results-area');
+        const plotsImg = document.getElementById('plots-img');
+        const consoleOutput = document.getElementById('console-output');
+
+        let lastAnalysisData = null;
+        let lastAnalysisMethod = '';
+        const saveFilenameInput = document.getElementById('save-filename');
+        const saveCsvBtn = document.getElementById('save-csv-btn');
+
+        // File Selection Event Listeners
+        fileCdfInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                boxCdf.classList.add('has-file');
+                titleCdf.innerHTML = `<span class="success-checkmark">✓</span> 누적고장률 로드됨`;
+                descCdf.innerText = fileName;
+                iconCdf.innerHTML = "✅";
+            }
+            checkFilesReady();
+        });
+
+        filePdfInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                boxPdf.classList.add('has-file');
+                titlePdf.innerHTML = `<span class="success-checkmark">✓</span> 수명 데이터 로드됨`;
+                descPdf.innerText = fileName;
+                iconPdf.innerHTML = "✅";
+            }
+            checkFilesReady();
+        });
+
+        function checkFilesReady() {
+            if (fileCdfInput.files.length > 0 && filePdfInput.files.length > 0) {
+                analyzeBtn.removeAttribute('disabled');
+            } else {
+                analyzeBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        // Modal triggers
+        analyzeBtn.addEventListener('click', () => {
+            modalOverlay.classList.add('active');
+        });
+
+        closeModal.addEventListener('click', () => {
+            modalOverlay.classList.remove('active');
+        });
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('active');
+            }
+        });
+
+        // Method Card Clicks - Execute API call
+        const methodCards = document.querySelectorAll('.method-card');
+        methodCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const method = card.getAttribute('data-method');
+                modalOverlay.classList.remove('active');
+                runAnalysis(method);
+            });
+        });
+
+        function runAnalysis(method) {
+            loadingOverlay.classList.add('active');
+            
+            const formData = new FormData();
+            formData.append('file_cdf', fileCdfInput.files[0]);
+            formData.append('file_pdf', filePdfInput.files[0]);
+            formData.append('method', method);
+
+            const apiUrl = window.location.protocol === 'file:' 
+                ? 'http://127.0.0.1:5000/analyze' 
+                : '/analyze';
+
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingOverlay.classList.remove('active');
+                if (data.status === 'success') {
+                    // Update UI elements
+                    plotsImg.src = 'data:image/png;base64,' + data.plot;
+                    consoleOutput.textContent = data.summary;
+                    resultsArea.style.display = 'flex';
+
+                    // Update download state
+                    lastAnalysisData = data;
+                    lastAnalysisMethod = method;
+                    saveFilenameInput.value = `${method}_Predict_Results.csv`;
+                    
+                    // Smooth scroll to results
+                    resultsArea.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                loadingOverlay.classList.remove('active');
+                console.error('Fetch error:', error);
+                alert('서버와 통신하는 중 오류가 발생했습니다.');
+            });
+        }
+
+        // Save CSV Event Listener and Logic
+        saveCsvBtn.addEventListener('click', async () => {
+            if (!lastAnalysisData || !lastAnalysisData.analysis_data) {
+                alert("저장할 분석 결과 데이터가 없습니다. 먼저 분석을 실행해주세요.");
+                return;
+            }
+
+            // Generate CSV string
+            let csvContent = "Time(Month),Failure_Rate(%),Lower_CI(%),Upper_CI(%)\n";
+            const data = lastAnalysisData.analysis_data;
+            for (let i = 0; i < data.time.length; i++) {
+                const timeVal = data.time[i];
+                const rateVal = data.failure_rate[i];
+                const lowerVal = data.lower_ci[i] !== undefined && data.lower_ci[i] !== null ? data.lower_ci[i] : "";
+                const upperVal = data.upper_ci[i] !== undefined && data.upper_ci[i] !== null ? data.upper_ci[i] : "";
+                csvContent += `${timeVal},${rateVal},${lowerVal},${upperVal}\n`;
+            }
+
+            const defaultFilename = saveFilenameInput.value.trim() || `${lastAnalysisMethod}_Predict_Results.csv`;
+
+            // Use showSaveFilePicker if available
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: defaultFilename,
+                        types: [{
+                            description: 'CSV Files (*.csv)',
+                            accept: {
+                                'text/csv': ['.csv'],
+                            },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(csvContent);
+                    await writable.close();
+                } catch (err) {
+                    console.warn("File System Access API failed or aborted:", err);
+                    if (err.name !== 'AbortError') {
+                        fallbackDownload(csvContent, defaultFilename);
+                    }
+                }
+            } else {
+                fallbackDownload(csvContent, defaultFilename);
+            }
+        });
+
+        function fallbackDownload(content, filename) {
+            // Encode contents with BOM for Excel Korean support
+            const BOM = "\uFEFF";
+            const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
